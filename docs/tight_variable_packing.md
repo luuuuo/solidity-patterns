@@ -4,13 +4,13 @@
 
 Optimize gas consumption when storing or loading statically-sized variables.
 
-在存储或加载静态大小变量时，优化气体消耗。
+在存储或加载静态大小变量时，优化gas消耗。
 
 ## Motivation
 
 As with all patterns in this category the main goal of implementing them is the reduction of gas requirement. This pattern in special is easily applied and does not change any contract logic. All that has to be done is writing suitable state variables in the correct order. To reduce the amount of gas used for deploying a contract, and later on calling his functions, we make use of the way the EVM allocates storage. Storage in Ethereum is a key-value store with keys and values of 32 bytes each. When storage is allocated, all statically-sized variables (everything besides mappings and dynamically-sized arrays) are written down one after another, in the order of their declaration, starting at position 0. The most commonly used data types (e.g. `bytes32`, `uint`, `int`) take up exactly one 32 byte slot in storage. This pattern describes how to save gas by using smaller data types (e.g. `bytes16`, `uint32`) when possible, as the EVM can then pack them together in one single 32 byte slot and therefore use less storage. Gas is then saved because the EVM can combine multiple reads or writes into one single operation. The underlying behavior is also referred to as "tight packing" and is unfortunately, until the time of writing, not automatically achieved by the optimizer.
 
-与此类别中的所有模式一样，实现它们的主要目标是减少气体需求。这种模式特别容易应用，不会改变任何合约逻辑。需要做的只是以正确的顺序编写适当的状态变量。为了减少部署合约和调用其函数时使用的气体量，我们利用了EVM分配存储空间的方式。以太坊中的存储是一个键值存储，其中每个键和值都是32字节。当存储被分配时，所有静态大小变量（除了映射和动态大小数组之外的所有内容）按照它们的声明顺序依次写入，从位置0开始。最常用的数据类型（例如 `bytes32`，`uint`，`int`）在存储中占用一个32字节的槽位。该模式描述了如何通过在可能的情况下使用较小的数据类型（例如 `bytes16`，`uint32`）来节省气体，因为EVM可以将它们打包在一个单独的32字节槽中，从而使用更少的存储空间。由于EVM可以将多个读取或写入组合成一个单独的操作，因此可以节省气体。该模式的基本行为也称为“紧密打包”，但不幸的是，在撰写本文时，优化器还没有自动实现该行为。
+与此类别中的所有模式一样，实现它们的主要目标是减少gas需求。这种模式特别容易应用，不会改变任何合约逻辑。需要做的只是以正确的顺序编写适当的状态变量。为了减少部署合约和调用其函数时使用的gas量，我们利用了EVM分配存储空间的方式。以太坊中的存储是一个键值存储，其中每个键和值都是32字节。当存储被分配时，所有静态大小变量（除了映射和动态大小数组之外的所有内容）按照它们的声明顺序依次写入，从位置0开始。最常用的数据类型（例如 `bytes32`，`uint`，`int`）在存储中占用一个32字节的槽位。该模式描述了如何通过在可能的情况下使用较小的数据类型（例如 `bytes16`，`uint32`）来节省gas，因为EVM可以将它们打包在一个单独的32字节槽中，从而使用更少的存储空间。由于EVM可以将多个读取或写入组合成一个单独的操作，因此可以节省gas。该模式的基本行为也称为“紧密打包”，但不幸的是，在撰写本文时，优化器还没有自动实现该行为。
 
 ## Applicability
 
@@ -20,7 +20,6 @@ Use the Tight Variable Packing pattern when
 * you are using more than one statically-sized state variable and can afford to use variables of smaller sizes.
 * you are using a struct consisting of more than one variable and can afford to use variables of smaller sizes.
 * you are using a statically-sized array and can afford to use a variable of a smaller size.
-
 
 当满足以下条件时，可以使用“紧密变量打包”模式：
 
@@ -43,7 +42,6 @@ As hinted in the Applicability section, this pattern can be used for state varia
 2. Grouping all data types that are supposed to go together into one 32 byte slot, and declare them one after another in your code. It is important to group data types together as the EVM stores the variables one after another in the given order. This is only done for state variables and inside of structs. Arrays consist of only one data type, so there is no ordering necessary.
 
 It is possible to store as many variables into one storage slot, as long as the combined storage requirement is equal to or less than the size of one storage slot, which is 32 bytes. For example, one `bool` variable takes up one byte. A `uint8` is one byte as well, `uint16` is two bytes, `uint32` four bytes, and so on. The storage requirement of the `bytes` data type is easy to remember, since for example `bytes4` takes exactly four bytes. So theoretically 32 `uint8` variables can be stored in the same space as one `uint256` can. This only works if the variables are declared one after another in the code, because if one bigger data type has to be stored in between, a new slot in storage is used.
-
 
 如适用性部分所示，此模式可用于状态变量、结构体内部和静态大小的数组。该模式的实现非常直接，可分为两个任务：
 
@@ -94,21 +92,20 @@ To quantify the potential reduction in required gas, a test has been conducted u
 
 It can be seen that the gas cost of contract creation is approximately 12% cheaper, when not using smaller data types. This can be explained because the EVM usually operates on 32 bytes at a time. It has to use additional operations in order to reduce the size of an element from its original to its reduced size, in our case from `bytes32` to `bytes1`, which costs extra gas. This cost pays off after saving one of our structs to storage. In our example we save 7 storage slots which amounts to saved gas of around 64%. This considerable amount of gas is not only saved once, but every time a new instance of this struct is stored.
 
-
-为了量化所需燃气量的潜在降低，我们使用在线Solidity编译器Remix进行了测试。上面提供的示例代码与一种解决方案进行了比较，该解决方案存储完全相同的输入数据，但不使用最小可能的数据类型，并按一种防止EVM使用紧密打包的变量顺序排列。因此，不是将所有八个变量写入一个存储槽中，而是使用了八个存储槽。该实验的代码可以在[GitHub](https://github.com/fravoll/solidity-patterns/blob/master/TightVariablePacking/TightVariablePackingGasExample.sol)上找到。结果如下表所示：
+为了量化所需gas量的潜在降低，我们使用在线Solidity编译器Remix进行了测试。上面提供的示例代码与一种解决方案进行了比较，该解决方案存储完全相同的输入数据，但不使用最小可能的数据类型，并按一种防止EVM使用紧密打包的变量顺序排列。因此，不是将所有八个变量写入一个存储槽中，而是使用了八个存储槽。该实验的代码可以在[GitHub](https://github.com/fravoll/solidity-patterns/blob/master/TightVariablePacking/TightVariablePackingGasExample.sol)上找到。结果如下表所示：
 
 |                        | 精细打包的结构体 | 没有精细打包的结构体 |
 | ---------------------- | ---------------- | -------------------- |
 | 合约创建               | 133172           | 116560               |
 | 将结构体保存到存储器中 | 57821            | 161636               |
 
-可以看出，当不使用较小的数据类型时，合约创建的燃气成本约便宜了12%。这可以解释为EVM通常一次处理32字节。为了将元素的大小从其原始大小减小到其减小后的大小（在我们的情况下从 `bytes32`到 `bytes1`），它必须使用额外的操作，这会消耗额外的燃气。在将我们的结构体之一保存到存储器后，这个成本得到了回报。在我们的示例中，我们节省了7个存储槽，节省了大约64%的燃气。这些可观的燃气不仅一次性节省，而且每次存储这个结构体的新实例时都会节省。
+可以看出，当不使用较小的数据类型时，合约创建的gas成本约便宜了12%。这可以解释为EVM通常一次处理32字节。为了将元素的大小从其原始大小减小到其减小后的大小（在我们的情况下从 `bytes32`到 `bytes1`），它必须使用额外的操作，这会消耗额外的gas。在将我们的结构体之一保存到存储器后，这个成本得到了回报。在我们的示例中，我们节省了7个存储槽，节省了大约64%的gas。这些可观的gas不仅一次性节省，而且每次存储这个结构体的新实例时都会节省。
 
 ## Consequences
 
 Consequences of the use of the Tight Variable Packing pattern have to be evaluated before implementing it blindly. The big benefit comes from the substantial amount of gas that can potentially be saved over the lifetime of a contract. But it is also possible to achieve the opposite, higher gas requirements, when not implementing it correctly. The positive effect on gas requirements only works for statically-sized storage variables. Function parameters or dynamically-sized arrays do not benefit from it. On the contrary, as seen in the contract creation costs in the Gas Analysis section, it is even more costly for the EVM to reduce the size of a data type compared to leaving it in its initial state. Another issue may arise when reordering variables to optimize storage usage, which is decreased readability. Usually variables are declared in a logical order. Changing this order could make it harder to audit the code and confuse users as well as developers.
 
-在盲目实施之前，必须评估使用精细变量打包模式的影响。巨大的好处来自于可能在合约生命周期内节省的大量燃气。但是，如果没有正确实施，也可能导致相反的结果，即更高的燃气要求。对燃气要求的积极影响仅适用于静态大小的存储变量。函数参数或动态大小的数组不会从中受益。相反，如燃气分析部分中所示的合约创建成本，将数据类型的大小减小比保持其初始状态更为昂贵。另一个问题可能出现在重新排序变量以优化存储使用时，即可读性降低。通常变量是按逻辑顺序声明的。更改此顺序可能会使审核代码更加困难，同时也会使用户和开发人员感到困惑。
+在盲目实施之前，必须评估使用精细变量打包模式的影响。巨大的好处来自于可能在合约生命周期内节省的大量gas。但是，如果没有正确实施，也可能导致相反的结果，即更高的gas要求。对gas要求的积极影响仅适用于静态大小的存储变量。函数参数或动态大小的数组不会从中受益。相反，如gas分析部分中所示的合约创建成本，将数据类型的大小减小比保持其初始状态更为昂贵。另一个问题可能出现在重新排序变量以优化存储使用时，即可读性降低。通常变量是按逻辑顺序声明的。更改此顺序可能会使审核代码更加困难，同时也会使用户和开发人员感到困惑。
 
 ## Known Uses
 
@@ -118,6 +115,6 @@ Another example can be found in the [Etherization contract](https://etherscan.io
 
 实施此模式很难观察，因为很难区分变量类型和排序是出于存储打包考虑还是其他原因。直到目前为止，没有观察到任何似乎完全有意实施了此模式的合约。一个值得注意的例子是[Rock-paper-scissors](https://etherscan.io/address/0xad01fab133e6b9a3308a68931f768ec86e1ad281#code)，这是一个石头剪刀布游戏，它将每个游戏存储在一个结构体中。移动和平局决胜者都存储在 `uint8`变量中，这允许进行紧密打包。但是看起来这个设计决策是在不考虑紧密打包的情况下做出的，因为它可以进一步优化。
 
-另一个例子可以在[Etherization合约](https://etherscan.io/address/0x3f593a15eb60672687c32492b62ed3e10e149ec6#code)中找到，这是一款在以太坊区块链上提供类似文明的游戏的DApp。在这个合约中，每个玩家都存储在一个结构体中。这次没有使用更小的数据类型，即使在不破坏游戏逻辑的情况下也是可能的。通过这样做，存储新玩家的燃气要求可以显著降低。
+另一个例子可以在[Etherization合约](https://etherscan.io/address/0x3f593a15eb60672687c32492b62ed3e10e149ec6#code)中找到，这是一款在以太坊区块链上提供类似文明的游戏的DApp。在这个合约中，每个玩家都存储在一个结构体中。这次没有使用更小的数据类型，即使在不破坏游戏逻辑的情况下也是可能的。通过这样做，存储新玩家的gas要求可以显著降低。
 
 [**< Back**](https://fravoll.github.io/solidity-patterns/)

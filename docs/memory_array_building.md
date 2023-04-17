@@ -90,8 +90,7 @@ In line 3 an example struct is defined containing several attributes, including 
 
 The analysis of gas consumption in this pattern is fairly easy. Again the Solidity online compiler Remix is used to compute the required gas. The code of the experiment can be found on [GitHub](https://github.com/fravoll/solidity-patterns/blob/master/MemoryArrayBuilding/MemoryArrayBuildingGasExample.sol). In our experiment we use the setting presented in the Sample Code section and initialize it with ten items of which two belong to the examined address. We then call the `getItemIDsByOwner(address _owner)` function twice from an external account as well as from another contract. One of the two times the function contains the `view` modifier and one time it does not. The results can be found in the following table and show how only a combination from an external call and the view function leads to a free query, while the other combinations cost gas like a regular function call would, because an actual transaction is broadcasted to the network.
 
-
-在这个模式中，对燃气消耗的分析相当容易。同样，使用 Solidity 在线编译器 Remix 计算所需的燃气。实验代码可以在 [GitHub](https://github.com/fravoll/solidity-patterns/blob/master/MemoryArrayBuilding/MemoryArrayBuildingGasExample.sol) 上找到。在我们的实验中，我们使用示例代码部分中提供的设置，并用其中两个物品属于被检查的地址的十个物品进行了初始化。然后，我们从外部账户和另一个合约中两次调用 `getItemIDsByOwner(address _owner)`函数。其中一次函数包含 `view`修饰符，另一次则没有。结果如下表所示，只有外部调用和视图函数的组合会导致免费查询，而其他组合会像普通函数调用一样产生燃气费用，因为实际的交易会广播到网络中。
+在这个模式中，对gas消耗的分析相当容易。同样，使用 Solidity 在线编译器 Remix 计算所需的gas。实验代码可以在 [GitHub](https://github.com/fravoll/solidity-patterns/blob/master/MemoryArrayBuilding/MemoryArrayBuildingGasExample.sol) 上找到。在我们的实验中，我们使用示例代码部分中提供的设置，并用其中两个物品属于被检查的地址的十个物品进行了初始化。然后，我们从外部账户和另一个合约中两次调用 `getItemIDsByOwner(address _owner)`函数。其中一次函数包含 `view`修饰符，另一次则没有。结果如下表所示，只有外部调用和视图函数的组合会导致免费查询，而其他组合会像普通函数调用一样产生gas费用，因为实际的交易会广播到网络中。
 
 |          | 视图函数 | 普通函数 |
 | -------- | -------- | -------- |
@@ -109,7 +108,7 @@ The most obvious consequence of applying the Memory Array Building pattern is th
 
 But the pattern does not only come with benefits. By implementing it, we increase complexity. It is unintuitive to store all items in one array compared to having separate arrays. Also the concept of doing aggregation on every single call instead of aggregating once and storing it that way might be confusing in the beginning.
 
-应用内存数组构建模式的最明显的结果是完全绕过交易费用，这一优点可以在函数频繁使用时节省大量资金。提出的替代方案是为我们想要聚合的每个实例存储一个数组（例如每个所有者）。一旦我们想要更改一个物品的所有者，这将导致显著的燃气要求。我们必须从一个数组中删除该物品，将其添加到另一个数组中，将第一个数组中的每个元素移动以填充空白空间，并缩短数组的长度。所有这些都是合约存储上昂贵的操作。在所提出的解决方案中更改属性时，只需要更改实际属性和跟踪长度的映射即可。
+应用内存数组构建模式的最明显的结果是完全绕过交易费用，这一优点可以在函数频繁使用时节省大量资金。提出的替代方案是为我们想要聚合的每个实例存储一个数组（例如每个所有者）。一旦我们想要更改一个物品的所有者，这将导致显著的gas要求。我们必须从一个数组中删除该物品，将其添加到另一个数组中，将第一个数组中的每个元素移动以填充空白空间，并缩短数组的长度。所有这些都是合约存储上昂贵的操作。在所提出的解决方案中更改属性时，只需要更改实际属性和跟踪长度的映射即可。
 
 但是，该模式不仅带来了好处。通过实现它，我们增加了复杂性。与使用单独的数组相比，将所有物品存储在一个数组中是不直观的。此外，在每次调用上进行聚合而不是一次聚合并以这种方式存储的概念可能在一开始会令人困惑。
 
@@ -118,7 +117,6 @@ But the pattern does not only come with benefits. By implementing it, we increas
 An implementation of this pattern can be found in the infamous [CryptoKitties contract](https://etherscan.io/address/0x06012c8cf97bead5deae237070f9587f8e7a266d\#code). In line 651 we find a function called `\lstinline|tokensOfOwner(address _owner)` which returns the IDs of all Kitties that belong to a given address.
 
 Another example is the now closed, Ethereum based slot machine [Slotthereum](https://etherscan.io/address/0xda8fe472e1beae12973fa48e9a1d9595f752fce0\#code). In this contract, the pattern was used in a similar fashion as in our example, to retrieve the IDs of all games.
-
 
 可以在臭名昭著的 [CryptoKitties 合约](https://etherscan.io/address/0x06012c8cf97bead5deae237070f9587f8e7a266d#code)中找到此模式的实现。在第 651 行，我们找到了一个名为 `\lstinline|tokensOfOwner(address _owner)` 的函数，它返回属于给定地址的所有 Kitties 的 ID。
 
