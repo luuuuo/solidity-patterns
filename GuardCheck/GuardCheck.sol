@@ -23,3 +23,25 @@ contract GuardCheck {
         assert(this.balance == balanceBeforeTransfer - transferAmount);
     }
 }
+
+struct ExpensiveStruct {
+    uint64 a; //uses 8 bytes
+    bytes32 e; //uses 32 bytes writes in new slot
+    uint64 b; //uses 8 bytes writes in new slot
+    bytes32 f; //uses 32 bytes writes in new slot
+    uint32 c; //uses 4 bytes writes in new slot
+    bytes32 g; //uses 32 bytes writes in new slot
+    uint8 d; //uses 1 byte writes in new slot
+    bytes32 h; //uses 32 bytes writes in new slot
+}
+
+struct ExpensiveStruct {
+    uint64 a;
+    uint32 c;
+    uint64 b;
+    uint8 d;
+    bytes32 e;
+    bytes32 f;
+    bytes32 g;
+    bytes32 h;
+}
